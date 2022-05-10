@@ -20,6 +20,7 @@ import torch.utils.data as data
 import numpy as np
 import argparse
 import datetime
+import wandb
 
 # Oof
 import eval as eval_script
@@ -96,6 +97,14 @@ if args.autoscale and args.batch_size != 8:
     cfg.lr *= factor
     cfg.max_iter //= factor
     cfg.lr_steps = [x // factor for x in cfg.lr_steps]
+
+# Wandb
+wandb.init(project="yolact", entity="ivc-group")
+wandb.config = {
+  "learning_rate": cfg.lr,
+  #"epochs": ?,
+  "batch_size": args.batch_size
+}
 
 # Update training parameters from the config if necessary
 def replace(name):
@@ -187,6 +196,15 @@ def train():
     yolact_net = Yolact()
     net = yolact_net
     net.train()
+
+    wandb.watch(
+        yolact_net,
+        criterion=None,
+        log="gradients",
+        log_freq=1000,
+        idx=None,
+        log_graph=(False)
+    )
 
     if args.log:
         log = Log(cfg.name, args.log_folder, dict(args._get_kwargs()),
@@ -312,6 +330,9 @@ def train():
                 
                 # no_inf_mean removes some components from the loss, so make sure to backward through all of it
                 # all_loss = sum([v.mean() for v in losses.values()])
+
+                # Monitor loss
+                wandb.log({"loss": loss})
 
                 # Backprop
                 loss.backward() # Do this to free up vram even if loss is not finite
