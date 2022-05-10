@@ -197,6 +197,15 @@ def train():
     net = yolact_net
     net.train()
 
+    wandb.watch(
+        yolact_net,
+        criterion=None,
+        log="gradients",
+        log_freq=1000,
+        idx=None,
+        log_graph=(False)
+    )
+
     if args.log:
         log = Log(cfg.name, args.log_folder, dict(args._get_kwargs()),
             overwrite=(args.resume is None), log_gpu_stats=args.log_gpu)
